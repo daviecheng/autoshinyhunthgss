@@ -4,7 +4,7 @@ An embedded system that automates shiny hunting in Pokemon HeartGold/SoulSilver 
 
 ## System Overview
 
-A single Raspberry Pi 4 handles everything: vision, decision-making, and button control. The Pi captures the DS top screen via a Pi Camera Module, classifies the current game state (title screen, dialogue, battle encounter, shiny sparkle), and drives GPIO pins to toggle N-channel MOSFETs soldered to the DS Lite button pads, emulating physical button presses.
+A single Raspberry Pi 4 handles everything: vision, decision-making, and button control. The Pi captures the DS top screen via a Pi Camera Module, classifies the current game state (title screen, dialogue, battle encounter, Pokemon sprite on screen), and drives GPIO pins to toggle N-channel MOSFETs soldered to the DS Lite button pads, emulating physical button presses.
 
 ```
 ┌──────────┐   CSI    ┌──────────────────────┐  GPIO/MOSFET  ┌──────────┐
@@ -20,9 +20,9 @@ The primary supported method is **soft resetting** (for starters and legendaries
 
 1. Press L+R+Start+Select simultaneously to soft reset the game
 2. Mash A through title screen and dialogue
-3. Wait for the battle/encounter screen
-4. Check for the shiny sparkle animation
-5. If shiny — stop and log. If not — repeat from step 1
+3. Wait for the battle/encounter screen, then for the Pokemon sprite to appear
+4. Compare the sprite against stored reference images of the target species, normal and shiny
+5. If shiny — stop and log. If confirmed not shiny — repeat from step 1. If uncertain — stop rather than risk resetting over a shiny
 
 The architecture is modular, designed to support additional hunt methods (random encounters, breeding) and more complex automation in the future.
 
@@ -50,7 +50,7 @@ Modules may depend on each other's public interfaces (e.g., strategy uses vision
 
 ## Build
 
-C++17, CMake minimum 3.9:
+C++17, CMake minimum 3.10:
 
 ```bash
 cmake -B ./build

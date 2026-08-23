@@ -45,8 +45,8 @@ Single Pi 4 does everything: captures the DS screen via camera, classifies game 
 
 ### Software Modules
 
-- **vision** — "What do I see?" Captures frames via Pi Camera, uses OpenCV to classify the DS screen state (title, dialogue, encounter, shiny sparkle). OpenCV stays inside this module; other modules only see a `ScreenState` enum.
-- **strategy** — "What should I do?" Takes a `ScreenState`, returns a `ButtonAction`. Each hunt method is a concrete `IHuntStrategy` implementation (e.g., `SoftResetStrategy`). Adding a new method means adding a new class — no changes elsewhere.
+- **vision** — "What do I see?" Captures frames via Pi Camera, uses OpenCV to classify the DS screen state (title, dialogue, encounter, sprite visible) and, once a sprite is visible, whether it is shiny by comparing it against stored reference images of the target species. Not the sparkle animation — the sprite persists, so it can be sampled repeatedly. OpenCV stays inside this module; other modules only see a `ScreenState` enum and a `ShinyVerdict` enum.
+- **strategy** — "What should I do?" Takes a `ScreenState` and `ShinyVerdict`, returns a `ButtonAction`. Each hunt method is a concrete `IHuntStrategy` implementation (e.g., `SoftResetStrategy`). Adding a new method means adding a new class — no changes elsewhere. Soft reset only on a confirmed non-shiny verdict; an unknown state or uncertain verdict halts rather than resets.
 - **gpio** — "Press the button." Drives MOSFET gates via Pi 4 GPIO to emulate DS button presses. Exposes an `IButtonDriver` interface so tests can mock it without hardware.
 - **app** — The main application. Wires vision + strategy + gpio together, runs the hunt loop, and handles startup/shutdown/signal handling.
 
@@ -56,7 +56,7 @@ Single Pi 4 does everything: captures the DS screen via camera, classifies game 
 CMakeLists.txt                  — top-level CMake, aggregates modules
 modules/                        — C++ modules (static libraries)
   vision/                       — screen capture and classification
-    include/vision/             — public headers (ScreenState enum)
+    include/vision/             — public headers (ScreenState, ShinyVerdict enums)
     private_include/            — internal headers (OpenCV-specific helpers)
     src/                        — implementation + CMakeLists.txt
     test/                       — unit tests for this module
@@ -91,7 +91,7 @@ To extend: add new `IHuntStrategy` impls for hunt methods, new `IButtonDriver` i
 - snake_case for functions and variables.
 - PascalCase for classes and structs.
 - `is`, `has`, `can` prefixes for booleans.
-- Verb-based names for actions (e.g., `send_command`, `capture_frame`, `detect_sparkle`).
+- Verb-based names for actions (e.g., `send_command`, `capture_frame`, `classify_sprite`).
 - Core modules depend on abstract interfaces, not concrete implementations.
 - Dependencies point inward: core modules (strategy, vision) must not depend on app.
 - Framework-specific types (OpenCV `cv::Mat`) stay within their respective modules and do not leak across public interfaces.
