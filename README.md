@@ -41,12 +41,103 @@ The architecture is modular, designed to support additional hunt methods (random
 
 The Pi 4 software is split into independent C++ modules:
 
-- **vision** — Captures frames via Pi Camera, uses OpenCV to classify the DS screen state. Other modules only see a `ScreenState` enum — OpenCV types stay inside this module.
-- **strategy** — Takes a `ScreenState`, returns a `ButtonAction`. Each hunt method is a concrete `IHuntStrategy` implementation (e.g., `SoftResetStrategy`).
-- **gpio** — Drives MOSFET gates via GPIO to emulate DS button presses. Exposes an `IButtonDriver` interface so tests can mock it without hardware.
-- **app** — Wires vision + strategy + gpio together, runs the hunt loop, handles startup/shutdown.
+- **vision** — "What do I see?" Captures frames via Pi Camera and classifies them with OpenCV into a single `ScreenState`. Screen classification and shiny classification are separate stages: the screen classifier runs on every frame (title, dialogue, encounter, sprite visible), and only a stable encounter advances to the shiny classifier, which compares the sprite against stored reference images of the target species. Every other screen state short-circuits and skips the shiny check entirely. Requiring the encounter to be stable keeps the comparison off half-faded sprites. Not the sparkle animation — the sprite persists, so it can be sampled repeatedly. OpenCV stays inside this module; other modules only see a `ScreenState` enum, with the internal `ShinyVerdict` kept in `private_include/`.
+- **strategy** — "What should I do?" Takes a `ScreenState`, returns a `ButtonAction` — a *set* of buttons, so simultaneous presses are one action (soft reset = `{L, R, Start, Select}`) and the empty set means no buttons are pressed. Carries no timing. Each hunt method is a concrete `IHuntStrategy` implementation (e.g., `SoftResetStrategy`), fixed at construction rather than passed in at runtime. Adding a new method means adding a new class — no changes elsewhere. Soft reset only on a confirmed non-shiny state; an unknown or uncertain state halts rather than resets.
+- **gpio** — "Press the button." Drives MOSFET gates via Pi 4 GPIO to emulate DS button presses. Takes a `ButtonAction` and drives its buttons together, owning press duration so strategy stays timing-free. Exposes an `IButtonDriver` interface so tests can mock it without hardware.
+- **app** — The main application. Wires vision + strategy + gpio together, selects the hunt method, runs the hunt loop at a fixed poll interval, and handles startup/shutdown/signal handling.
 
-Modules may depend on each other's public interfaces (e.g., strategy uses vision's `ScreenState` enum), but core modules do not depend on app.
+### Hunt Loop
+
+Every iteration follows the same path. The only branch is whether the shiny classifier runs.
+
+```
+        ┌──────────────┐
+        │ capture frame│◄──────── poll interval (app)
+        └──────┬───────┘
+               ▼
+        ┌──────────────┐
+        │    screen    │
+        │  classifier  │
+        └──────┬───────┘
+               ▼
+        stable encounter?
+         │            │
+      no │            │ yes
+         │            ▼
+         │     ┌──────────────┐
+         │     │    shiny     │
+         │     │  classifier  │
+         │     └──────┬───────┘
+         ▼            ▼
+    ScreenState   ScreenState
+    (as-is)       (shiny result replaces Encounter)
+         │            │
+         └─────┬──────┘
+               ▼
+        ┌──────────────┐
+        │   strategy   │
+        └──────┬───────┘
+               ▼
+         ButtonAction
+         │          │
+   empty │          │ non-empty
+         ▼          ▼
+    no presses  ┌────────┐
+                │  gpio  │
+                └────────┘
+```
+
+The shiny verdict replaces the encounter state rather than travelling beside it, so strategy
+always switches on exactly one value:
+
+| ScreenState | ButtonAction | Outcome |
+|---|---|---|
+| `Unknown` | `{}` | halt — screen unrecognized, log for review |
+| `LoadingScreen` | `{}` | nothing — next poll |
+| `Encounter` (sprite not stable yet) | `{}` | nothing — next poll |
+| `TrainerInFrontOfPokemon` | `{A}` | advance dialogue |
+| `EncounterShiny` | `{}` | halt — preserve the shiny |
+| `EncounterNonShiny` | `{L, R, Start, Select}` | soft reset, next attempt |
+| `EncounterUncertain` | `{}` | halt — never risk resetting over a shiny |
+
+An empty `ButtonAction` only ever means "press nothing"; it does not say whether to keep
+hunting. Loop termination is app's decision, based on which state was reached — strategy
+stays concerned with buttons alone.
+
+### Dependency Graph
+
+```
+app ──► vision     (reads screen state)
+    ──► strategy   (decides next action)
+    ──► gpio       (executes button presses)
+
+Modules may depend on each other's public interfaces (e.g., strategy uses vision's ScreenState enum).
+```
+
+Core modules do not depend on app. To extend: add new `IHuntStrategy` impls for hunt methods, new `IButtonDriver` impls to swap button control, or change vision internals without affecting other modules.
+
+## File Structure
+
+```
+CMakeLists.txt                  — top-level CMake, aggregates modules
+modules/                        — C++ modules (static libraries)
+  vision/                       — screen capture and classification
+    include/vision/             — public headers (ScreenState enum)
+    private_include/            — internal headers (screen + shiny classifiers)
+    src/                        — implementation + CMakeLists.txt
+    test/                       — unit tests for this module
+  strategy/                     — hunt logic (IHuntStrategy + implementations)
+  gpio/                         — GPIO button driver (IButtonDriver + implementation)
+  app/                          — main application entry points and orchestration
+docs/                           — Schematics, 3D models, and documentation
+```
+
+Library modules (vision, strategy, gpio) build as static libraries. App builds as an executable that links against them.
+
+## Dependencies
+
+- OpenCV
+- GoogleTest
 
 ## Build
 
