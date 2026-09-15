@@ -18,7 +18,7 @@ enum class ScreenState : std::uint8_t {
     Count
 };
 
-std::string_view to_string(ScreenState state)
+inline std::string_view to_string(ScreenState state)
 {
     switch (state) {
         case ScreenState::GameIntro:
