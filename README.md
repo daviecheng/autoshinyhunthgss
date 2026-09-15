@@ -41,10 +41,11 @@ The architecture is modular, designed to support additional hunt methods (random
 
 The Pi 4 software is split into independent C++ modules:
 
-- **vision** — "What do I see?" Captures frames via Pi Camera and classifies them with OpenCV into a single `ScreenState`. Screen classification and shiny classification are separate stages: the screen classifier runs on every frame (title, dialogue, encounter, sprite visible), and only a stable encounter advances to the shiny classifier, which compares the sprite against stored reference images of the target species. Every other screen state short-circuits and skips the shiny check entirely. Requiring the encounter to be stable keeps the comparison off half-faded sprites. Not the sparkle animation — the sprite persists, so it can be sampled repeatedly. OpenCV stays inside this module; other modules only see a `ScreenState` enum, with the internal `ShinyVerdict` kept in `private_include/`.
+- **capture** — "Give me a frame." Owns camera access through the libcamera C++ API and hands out frames as raw bytes plus width, height, stride and pixel format. No OpenCV. Exposes an `IFrameSource` interface so vision can be driven from stored images with no camera attached.
+- **vision** — "What do I see?" Takes a frame from capture and classifies it with OpenCV into a single `ScreenState`. Screen classification and shiny classification are separate stages: the screen classifier runs on every frame (title, dialogue, encounter, sprite visible), and only a stable encounter advances to the shiny classifier, which compares the sprite against stored reference images of the target species. Every other screen state short-circuits and skips the shiny check entirely. Requiring the encounter to be stable keeps the comparison off half-faded sprites. Not the sparkle animation — the sprite persists, so it can be sampled repeatedly. OpenCV stays inside this module; other modules only see a `ScreenState` enum, with the internal `ShinyVerdict` kept in `private_include/`.
 - **strategy** — "What should I do?" Takes a `ScreenState`, returns a `ButtonAction` — a *set* of buttons, so simultaneous presses are one action (soft reset = `{L, R, Start, Select}`) and the empty set means no buttons are pressed. Carries no timing. Each hunt method is a concrete `IHuntStrategy` implementation (e.g., `SoftResetStrategy`), fixed at construction rather than passed in at runtime. Adding a new method means adding a new class — no changes elsewhere. Soft reset only on a confirmed non-shiny state; an unknown or uncertain state halts rather than resets.
 - **gpio** — "Press the button." Drives MOSFET gates via Pi 4 GPIO to emulate DS button presses. Takes a `ButtonAction` and drives its buttons together, owning press duration so strategy stays timing-free. Exposes an `IButtonDriver` interface so tests can mock it without hardware.
-- **app** — The main application. Wires vision + strategy + gpio together, selects the hunt method, runs the hunt loop at a fixed poll interval, and handles startup/shutdown/signal handling.
+- **app** — The main application. Wires capture + vision + strategy + gpio together, selects the hunt method, runs the hunt loop at a fixed poll interval, and handles startup/shutdown/signal handling.
 
 ### Hunt Loop
 
@@ -53,6 +54,7 @@ Every iteration follows the same path. The only branch is whether the shiny clas
 ```
         ┌──────────────┐
         │ capture frame│◄──────── poll interval (app)
+        │   (capture)  │
         └──────┬───────┘
                ▼
         ┌──────────────┐
@@ -107,9 +109,12 @@ stays concerned with buttons alone.
 ### Dependency Graph
 
 ```
-app ──► vision     (reads screen state)
+app ──► capture    (provides frames)
+    ──► vision     (reads screen state)
     ──► strategy   (decides next action)
     ──► gpio       (executes button presses)
+
+vision ──► capture (IFrameSource interface only)
 
 Modules may depend on each other's public interfaces (e.g., strategy uses vision's ScreenState enum).
 ```
@@ -121,7 +126,12 @@ Core modules do not depend on app. To extend: add new `IHuntStrategy` impls for 
 ```
 CMakeLists.txt                  — top-level CMake, aggregates modules
 modules/                        — C++ modules (static libraries)
-  vision/                       — screen capture and classification
+  capture/                      — camera access (IFrameSource + libcamera backend)
+    include/capture/            — public headers (IFrameSource, Frame)
+    private_include/            — libcamera backend internals
+    src/                        — implementation + CMakeLists.txt
+    test/                       — unit tests for this module
+  vision/                       — screen and shiny classification
     include/vision/             — public headers (ScreenState enum)
     private_include/            — internal headers (screen + shiny classifiers)
     src/                        — implementation + CMakeLists.txt
@@ -132,11 +142,12 @@ modules/                        — C++ modules (static libraries)
 docs/                           — Schematics, 3D models, and documentation
 ```
 
-Library modules (vision, strategy, gpio) build as static libraries. App builds as an executable that links against them.
+Library modules (capture, vision, strategy, gpio) build as static libraries. App builds as an executable that links against them.
 
 ## Dependencies
 
-- OpenCV
+- libcamera (capture)
+- OpenCV (vision)
 - GoogleTest
 
 ## Build

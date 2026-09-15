@@ -21,12 +21,15 @@ ctest --test-dir ./build
 These are design decisions, not incidental structure. Do not work around them silently — if
 one is genuinely blocking, say so rather than routing past it.
 
+- capture owns camera access. libcamera types stay inside capture; it publishes frames as raw
+  bytes plus dimensions.
 - OpenCV types (`cv::Mat`) stay inside vision and never cross a public interface.
 - vision publishes one `ScreenState` enum. `ShinyVerdict` is internal, in `private_include/`.
-- strategy carries no timing. gpio owns press duration; app owns the poll interval.
-- Dependencies point inward: vision and strategy must not depend on app.
-- Core modules depend on abstract interfaces (`IHuntStrategy`, `IButtonDriver`), not concrete
-  implementations, so tests can run without hardware.
+- strategy carries no timing. gpio owns press duration; app owns the poll interval and the
+  encounter timeout.
+- Dependencies point inward: capture, vision and strategy must not depend on app.
+- Core modules depend on abstract interfaces (`IFrameSource`, `IHuntStrategy`, `IButtonDriver`),
+  not concrete implementations, so tests can run without hardware.
 - Public interfaces use standard C++ types.
 
 ## Module Layout
@@ -48,5 +51,7 @@ All code uses the `autoshinyhunthgss` namespace.
 
 ## Testing
 
-Each module has its own unit tests — test images for vision, a mock `IButtonDriver` for gpio,
-direct input/output for strategy. GoogleTest for the framework, CTest for the runner.
+Each module has its own unit tests — a fake `IFrameSource` and test images for vision, a mock
+`IButtonDriver` for gpio, direct input/output for strategy. capture's libcamera backend is gated
+behind a CMake option so everything else builds and tests without a Pi. GoogleTest for the
+framework, CTest for the runner.
