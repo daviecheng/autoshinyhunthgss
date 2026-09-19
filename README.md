@@ -147,8 +147,18 @@ Library modules (capture, vision, strategy, gpio) build as static libraries. App
 ## Dependencies
 
 - libcamera (capture)
-- OpenCV (capture, vision)
+- OpenCV 4.x (capture, vision) — the newest OpenCV packaged for Raspberry Pi OS is 4.x,
+  so the development machine uses 4.x as well to keep behaviour deterministic across both
 - GoogleTest
+
+Linux only — the build locates OpenCV through pkg-config, and the deployment target is
+Raspberry Pi OS.
+
+On Raspberry Pi OS / Debian:
+
+    sudo apt install libopencv-dev libgtest-dev libcamera-dev
+
+Development happens on Arch, where OpenCV 4.x comes from `aur/opencv4`.
 
 ## Build
 

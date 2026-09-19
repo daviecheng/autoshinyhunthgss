@@ -13,6 +13,11 @@ target_include_directories(capture
         ${CMAKE_CURRENT_SOURCE_DIR}/private_include
 )
 
+target_link_libraries(capture
+    PRIVATE
+        PkgConfig::OpenCV
+)
+
 target_compile_features(capture
     PUBLIC
         cxx_std_17
