@@ -41,8 +41,8 @@ The architecture is modular, designed to support additional hunt methods (random
 
 The Pi 4 software is split into independent C++ modules:
 
-- **capture** — "Give me a frame." Owns camera access through the libcamera C++ API and hands out frames as raw bytes plus width, height, stride and pixel format. No OpenCV. Exposes an `IFrameSource` interface so vision can be driven from stored images with no camera attached.
-- **vision** — "What do I see?" Takes a frame from capture and classifies it with OpenCV into a single `ScreenState`. Screen classification and shiny classification are separate stages: the screen classifier runs on every frame (title, dialogue, encounter, sprite visible), and only a stable encounter advances to the shiny classifier, which compares the sprite against stored reference images of the target species. Every other screen state short-circuits and skips the shiny check entirely. Requiring the encounter to be stable keeps the comparison off half-faded sprites. Not the sparkle animation — the sprite persists, so it can be sampled repeatedly. OpenCV stays inside this module; other modules only see a `ScreenState` enum, with the internal `ShinyVerdict` kept in `private_include/`.
+- **capture** — "Give me a frame." Owns camera access through the libcamera C++ API. Locates the DS top screen in every frame, rectifies it to a fixed 512x384 BGR888 buffer, and hands that out as raw bytes plus width, height, stride and pixel format. The mount holds the nominal framing; locating the screen per frame is tolerance for the rig drifting or being knocked, so captures stay stable without a recalibration step. A frame whose screen cannot be located reuses the last good framing. Requests BGR888 from the camera as well, so framing is geometry only — no format conversion anywhere in capture. Uses OpenCV internally for this, but `cv::Mat` never crosses its public interface. Exposes an `IFrameSource` interface so vision can be driven from stored images with no camera attached.
+- **vision** — "What do I see?" Takes an already-cropped top-screen frame from capture and classifies it with OpenCV into a single `ScreenState`. Classification only — framing and cropping belong to capture. Validates that the frame is 512x384 BGR888 before classifying; a mismatch means capture is broken, so it returns `Unknown` and logs rather than converting the frame or its reference images. Screen classification and shiny classification are separate stages: the screen classifier runs on every frame (title, dialogue, encounter, sprite visible), and only a stable encounter advances to the shiny classifier, which compares the sprite against stored reference images of the target species. Every other screen state short-circuits and skips the shiny check entirely. Requiring the encounter to be stable keeps the comparison off half-faded sprites. Not the sparkle animation — the sprite persists, so it can be sampled repeatedly. OpenCV stays inside this module; other modules only see a `ScreenState` enum, with the internal `ShinyVerdict` kept in `private_include/`.
 - **strategy** — "What should I do?" Takes a `ScreenState`, returns a `ButtonAction` — a *set* of buttons, so simultaneous presses are one action (soft reset = `{L, R, Start, Select}`) and the empty set means no buttons are pressed. Carries no timing. Each hunt method is a concrete `IHuntStrategy` implementation (e.g., `SoftResetStrategy`), fixed at construction rather than passed in at runtime. Adding a new method means adding a new class — no changes elsewhere. Soft reset only on a confirmed non-shiny state; an unknown or uncertain state halts rather than resets.
 - **gpio** — "Press the button." Drives MOSFET gates via Pi 4 GPIO to emulate DS button presses. Takes a `ButtonAction` and drives its buttons together, owning press duration so strategy stays timing-free. Exposes an `IButtonDriver` interface so tests can mock it without hardware.
 - **app** — The main application. Wires capture + vision + strategy + gpio together, selects the hunt method, runs the hunt loop at a fixed poll interval, and handles startup/shutdown/signal handling.
@@ -128,7 +128,7 @@ CMakeLists.txt                  — top-level CMake, aggregates modules
 modules/                        — C++ modules (static libraries)
   capture/                      — camera access (IFrameSource + libcamera backend)
     include/capture/            — public headers (IFrameSource, Frame)
-    private_include/            — libcamera backend internals
+    private_include/            — libcamera backend and screen locator internals
     src/                        — implementation + CMakeLists.txt
     test/                       — unit tests for this module
   vision/                       — screen and shiny classification
@@ -147,7 +147,7 @@ Library modules (capture, vision, strategy, gpio) build as static libraries. App
 ## Dependencies
 
 - libcamera (capture)
-- OpenCV (vision)
+- OpenCV (capture, vision)
 - GoogleTest
 
 ## Build

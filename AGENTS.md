@@ -21,9 +21,11 @@ ctest --test-dir ./build
 These are design decisions, not incidental structure. Do not work around them silently — if
 one is genuinely blocking, say so rather than routing past it.
 
-- capture owns camera access. libcamera types stay inside capture; it publishes frames as raw
-  bytes plus dimensions.
-- OpenCV types (`cv::Mat`) stay inside vision and never cross a public interface.
+- capture owns camera access and framing. libcamera types stay inside capture; it publishes the
+  cropped DS top screen as raw bytes plus dimensions.
+- OpenCV types (`cv::Mat`) stay inside capture and vision, and never cross a public interface.
+- capture and vision agree on one frame contract — 512x384 BGR888, a constant in capture's public
+  header. vision validates it and rejects a mismatch; it never converts.
 - vision publishes one `ScreenState` enum. `ShinyVerdict` is internal, in `private_include/`.
 - strategy carries no timing. gpio owns press duration; app owns the poll interval and the
   encounter timeout.
@@ -52,6 +54,8 @@ All code uses the `autoshinyhunthgss` namespace.
 ## Testing
 
 Each module has its own unit tests — a fake `IFrameSource` and test images for vision, a mock
-`IButtonDriver` for gpio, direct input/output for strategy. capture's libcamera backend is gated
-behind a CMake option so everything else builds and tests without a Pi. GoogleTest for the
-framework, CTest for the runner.
+`IButtonDriver` for gpio, direct input/output for strategy. capture's framing takes wide BGR888 rig
+photos in and produces cropped screens out; fixtures cover the nominal rig plus shifted and tilted
+variants to exercise that tolerance. Fixture dimensions are unconstrained — only the 512x384 BGR888
+output is asserted. capture's libcamera backend is gated behind a CMake option so everything
+else builds and tests without a Pi. GoogleTest for the framework, CTest for the runner.
