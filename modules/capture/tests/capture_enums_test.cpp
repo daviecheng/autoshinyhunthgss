@@ -12,7 +12,7 @@ TEST(CaptureStatusTest, InvalidStatusConvertToString)
     EXPECT_EQ(to_string(invalidCaptureStatus), "Unknown");
 }
 
-TEST(CaptureStatusTest, OkConvertToString)
+TEST(CaptureStatusTest, ScreenFoundConvertToString)
 {
-    EXPECT_EQ(to_string(CaptureStatus::Ok), "Ok");
+    EXPECT_EQ(to_string(CaptureStatus::ScreenFound), "Screen Found");
 }

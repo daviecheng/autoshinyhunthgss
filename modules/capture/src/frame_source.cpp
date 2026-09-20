@@ -7,10 +7,10 @@ CaptureStatus FrameSource::capture_frame(bool is_device_available) const
 {
     if (is_device_available)
     {
-        return CaptureStatus::Ok;
+        return CaptureStatus::ScreenFound;
     }
 
-    return CaptureStatus::NoDevice;
+    return CaptureStatus::Unknown;
 }
 
 } // namespace capture

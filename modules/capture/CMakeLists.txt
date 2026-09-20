@@ -4,6 +4,8 @@ target_sources(capture
     PRIVATE
         # Add src files here
         src/frame_source.cpp
+        src/opencv_extensions.cpp
+        src/screen_locator.cpp
 )
 
 target_include_directories(capture

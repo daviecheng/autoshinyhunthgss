@@ -10,10 +10,8 @@ namespace capture {
 enum class CaptureStatus : std::uint8_t
 {
     Unknown,
-    Ok,
-    NoDevice,
-    ConfigurationFailed,
-    Timeout,
+    ScreenFound,
+    ScreenNotFound,
     Count
 };
 
@@ -21,14 +19,10 @@ inline std::string_view to_string(CaptureStatus status)
 {
     switch (status)
     {
-        case CaptureStatus::Ok:
-            return "Ok";
-        case CaptureStatus::NoDevice:
-            return "NoDevice";
-        case CaptureStatus::ConfigurationFailed:
-            return "ConfigurationFailed";
-        case CaptureStatus::Timeout:
-            return "Timeout";
+        case CaptureStatus::ScreenFound:
+            return "Screen Found";
+        case CaptureStatus::ScreenNotFound:
+            return "Screen Not Found";
         case CaptureStatus::Unknown:
         default:
             return "Unknown";
