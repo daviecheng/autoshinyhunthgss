@@ -42,7 +42,7 @@ void dump_if_requested(const std::string& name, const cv::Mat& image)
 
 TEST(ScreenLocatorTest, LocatesScreenInPhoto)
 {
-    const cv::Mat input_frame = load_fixture("nominal.png");
+    const cv::Mat input_frame = load_fixture("screen_input.png");
     ASSERT_FALSE(input_frame.empty());
 
     ScreenLocator screenLocator;
