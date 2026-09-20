@@ -25,6 +25,8 @@ target_compile_features(capture
         cxx_std_17
 )
 
+set(CAPTURE_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
 if(BUILD_TESTING AND BUILD_CAPTURE_TESTS)
     add_subdirectory(tests)
 endif()
