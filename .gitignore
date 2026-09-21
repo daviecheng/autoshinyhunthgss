@@ -3,3 +3,6 @@
 
 # Build
 build/
+
+# Test Artifacts
+modules/capture/tests/test_output/

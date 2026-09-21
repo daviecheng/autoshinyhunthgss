@@ -13,6 +13,7 @@ target_include_directories(capture_tests
 target_compile_definitions(capture_tests
     PRIVATE
         CAPTURE_TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test_data"
+        CAPTURE_TEST_OUTPUT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test_output"
 )
 
 target_link_libraries(capture_tests

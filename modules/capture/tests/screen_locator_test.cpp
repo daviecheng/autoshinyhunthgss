@@ -1,6 +1,6 @@
-#include <cstdlib>
-#include <fstream>
+#include <filesystem>
 #include <string>
+#include <system_error>
 
 #include <gtest/gtest.h>
 
@@ -15,42 +15,67 @@
 namespace autoshinyhunthgss::capture {
 namespace tests {
 
-std::string fixture_path(const std::string& name)
-{
-    return std::string(CAPTURE_TEST_DATA_DIR) + "/" + name;
-}
+constexpr const char* kTestName = "screen_locator";
 
-cv::Mat load_fixture(const std::string& name)
+// std::string fixture_path(const std::string& name)
+// {
+//     return std::string(CAPTURE_TEST_DATA_DIR) + "/" + name;
+// }
+
+cv::Mat load_artifact(const std::string& name)
 {
-    const std::string path = fixture_path(name);
-    if (!std::ifstream(path).good())
+    const std::filesystem::path path = std::filesystem::path(CAPTURE_TEST_DATA_DIR) / kTestName / name;
+
+    if (!std::filesystem::exists(path))
     {
         return cv::Mat{};
     }
 
-    return cv::imread(path, cv::IMREAD_COLOR);
+    return cv::imread(path.string(), cv::IMREAD_COLOR);
 }
 
-void dump_if_requested(const std::string& name, const cv::Mat& image)
+void write_artifact(const std::string& name, const cv::Mat& image)
 {
-    const char* directory = std::getenv("CAPTURE_TEST_DUMP_DIR");
-    if (directory != nullptr && !image.empty())
+    if (image.empty())
     {
-        cv::imwrite(std::string(directory) + "/" + name + ".png", image);
+        return;
     }
+
+    const std::filesystem::path directory = std::filesystem::path(CAPTURE_TEST_OUTPUT_DIR) / kTestName;
+
+    std::error_code error;
+    std::filesystem::create_directories(directory, error);
+
+    if (error)
+    {
+        return;
+    }
+
+    cv::imwrite((directory / (name + ".png")).string(), image);
 }
+
+// void dump_if_requested(const std::string& name, const cv::Mat& image)
+// {
+//     const char* directory = std::getenv("CAPTURE_TEST_DUMP_DIR");
+//     if (directory != nullptr && !image.empty())
+//     {
+//         cv::imwrite(std::string(directory) + "/" + name + ".png", image);
+//     }
+// }
 
 TEST(ScreenLocatorTest, LocatesScreenInPhoto)
 {
-    const cv::Mat input_frame = load_fixture("screen_input.png");
+    const cv::Mat input_frame = load_artifact("screen_input.png");
     ASSERT_FALSE(input_frame.empty());
 
     ScreenLocator screenLocator;
     cv::Mat output_screen;
 
     const CaptureStatus status = screenLocator.locate(input_frame, output_screen);
-    dump_if_requested("input", input_frame);
-    dump_if_requested("output", output_screen);
+    write_artifact("input_frame", input_frame);
+    write_artifact("output_frame", output_screen);
+    // dump_if_requested("input", input_frame);
+    // dump_if_requested("output", output_screen);
 
     ASSERT_EQ(status, CaptureStatus::ScreenFound);
 }
