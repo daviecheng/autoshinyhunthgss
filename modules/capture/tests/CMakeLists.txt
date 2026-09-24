@@ -1,6 +1,7 @@
 add_executable(capture_tests
     capture_enums_test.cpp
     frame_conversion_test.cpp
+    frame_recorder_test.cpp
     screen_locator_test.cpp
 )
 
