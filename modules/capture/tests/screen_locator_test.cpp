@@ -17,11 +17,6 @@ namespace tests {
 
 constexpr const char* kTestName = "screen_locator";
 
-// std::string fixture_path(const std::string& name)
-// {
-//     return std::string(CAPTURE_TEST_DATA_DIR) + "/" + name;
-// }
-
 cv::Mat load_artifact(const std::string& name)
 {
     const std::filesystem::path path = std::filesystem::path(CAPTURE_TEST_DATA_DIR) / kTestName / name;
@@ -54,15 +49,6 @@ void write_artifact(const std::string& name, const cv::Mat& image)
     cv::imwrite((directory / (name + ".png")).string(), image);
 }
 
-// void dump_if_requested(const std::string& name, const cv::Mat& image)
-// {
-//     const char* directory = std::getenv("CAPTURE_TEST_DUMP_DIR");
-//     if (directory != nullptr && !image.empty())
-//     {
-//         cv::imwrite(std::string(directory) + "/" + name + ".png", image);
-//     }
-// }
-
 TEST(ScreenLocatorTest, LocatesScreenInPhoto)
 {
     const cv::Mat input_frame = load_artifact("screen_input.png");
@@ -74,8 +60,6 @@ TEST(ScreenLocatorTest, LocatesScreenInPhoto)
     const CaptureStatus status = screenLocator.locate(input_frame, output_screen);
     write_artifact("input_frame", input_frame);
     write_artifact("output_frame", output_screen);
-    // dump_if_requested("input", input_frame);
-    // dump_if_requested("output", output_screen);
 
     ASSERT_EQ(status, CaptureStatus::ScreenFound);
 }
