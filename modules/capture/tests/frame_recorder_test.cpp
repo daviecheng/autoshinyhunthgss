@@ -11,32 +11,13 @@
 #include <capture/frame_source_factory.hpp>
 
 #include "frame_recorder.hpp"
+#include "test_helpers.hpp"
 
 namespace autoshinyhunthgss::capture {
 namespace tests {
 namespace {
 
 constexpr const char* kTestName = "frame_recorder";
-
-// Cleans on entry, not on exit, so the last run's folders stay behind to look at.
-std::filesystem::path make_case_directory(const std::string& case_name)
-{
-    const std::filesystem::path directory =
-        std::filesystem::path(CAPTURE_TEST_OUTPUT_DIR) / kTestName / case_name;
-
-    std::error_code error;
-    std::filesystem::remove_all(directory, error);
-
-    return directory;
-}
-
-std::size_t count_entries(const std::filesystem::path& directory)
-{
-    std::error_code error;
-
-    return static_cast<std::size_t>(std::distance(std::filesystem::directory_iterator(directory, error),
-                                                  std::filesystem::directory_iterator{}));
-}
 
 FrameRetentionConfig make_config(const std::filesystem::path& directory, int max_retained_frames)
 {
@@ -45,14 +26,6 @@ FrameRetentionConfig make_config(const std::filesystem::path& directory, int max
     config.max_retained_frames = max_retained_frames;
 
     return config;
-}
-
-cv::Scalar make_random_color()
-{
-    static std::mt19937 engine(42);
-    std::uniform_int_distribution<int> channel(0, 255);
-
-    return cv::Scalar(channel(engine), channel(engine), channel(engine));
 }
 
 cv::Mat make_input_frame()
@@ -76,7 +49,7 @@ void verify_frame_capture(const std::filesystem::path& slot)
 
 TEST(FrameRecorderTest, RecordOneFrame)
 {
-    const auto directory = make_case_directory("record_one_frame");
+    const auto directory = make_test_directory(kTestName, "record_one_frame");
 
     FrameRecorder recorder(make_config(directory, 10));
     ASSERT_TRUE(recorder.is_enabled());
@@ -88,7 +61,7 @@ TEST(FrameRecorderTest, RecordOneFrame)
 
 TEST(FrameRecorderTest, RecordTwoFrames)
 {
-    const auto directory = make_case_directory("record_two_frames");
+    const auto directory = make_test_directory(kTestName, "record_two_frames");
 
     FrameRecorder recorder(make_config(directory, 5));
     ASSERT_TRUE(recorder.is_enabled());
@@ -102,7 +75,7 @@ TEST(FrameRecorderTest, RecordTwoFrames)
 
 TEST(FrameRecorderTest, OldestSlotRemovedWhenMaxSlotsReached)
 {
-    const auto directory = make_case_directory("oldest_slot_removed");
+    const auto directory = make_test_directory(kTestName, "oldest_slot_removed");
 
     FrameRecorder recorder(make_config(directory, 1));
     ASSERT_TRUE(recorder.is_enabled());
@@ -118,7 +91,7 @@ TEST(FrameRecorderTest, OldestSlotRemovedWhenMaxSlotsReached)
 
 TEST(FrameRecorderTest, ClearsPreviousSessionOnStart)
 {
-    const auto directory = make_case_directory("restart");
+    const auto directory = make_test_directory(kTestName, "restart");
 
     {
         FrameRecorder first(make_config(directory, 10));
