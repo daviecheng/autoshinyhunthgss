@@ -12,6 +12,7 @@ enum class CaptureStatus : std::uint8_t
     Unknown,
     ScreenFound,
     ScreenNotFound,
+    NoMoreFrames,
     Count
 };
 
@@ -23,6 +24,8 @@ inline std::string_view to_string(CaptureStatus status)
             return "Screen Found";
         case CaptureStatus::ScreenNotFound:
             return "Screen Not Found";
+        case CaptureStatus::NoMoreFrames:
+            return "No More Frames";
         case CaptureStatus::Unknown:
         default:
             return "Unknown";

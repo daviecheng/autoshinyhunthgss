@@ -21,6 +21,7 @@ struct FrameRetentionConfig
 {
     std::string output_directory; // disables retention if empty
     int max_retained_frames = 50;
+    bool is_every_frame_retained = false; // for dev purposes
     bool is_input_frame_saved = true;
     bool is_output_frame_saved = true;
 };
@@ -28,7 +29,6 @@ struct FrameRetentionConfig
 struct ImageSourceConfig
 {
     std::vector<std::string> image_paths;
-    bool is_looping = true;
     FrameRetentionConfig retention;
 };
 
