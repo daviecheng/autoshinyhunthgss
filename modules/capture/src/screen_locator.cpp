@@ -11,44 +11,36 @@
 
 namespace autoshinyhunthgss {
 namespace capture {
+namespace screen_locator {
 
-CaptureStatus ScreenLocator::locate(const cv::Mat& wide_frame, cv::Mat& out_screen)
+CaptureStatus locate(const cv::Mat& input_frame, cv::Mat& out_screen)
 {
-    if (wide_frame.empty() || wide_frame.type() != CV_8UC3)
+    if (input_frame.empty() || input_frame.type() != CV_8UC3)
     {
         return CaptureStatus::ScreenNotFound;
     }
 
     std::vector<cv::Point2f> corners;
-
-    if (find_screen_corners(wide_frame, corners))
-    {
-        _last_good_corners = corners;
-    }
-    else if (!_last_good_corners.empty())
-    {
-        corners = _last_good_corners;
-    }
-    else
+    if (!find_screen_corners(input_frame, corners))
     {
         return CaptureStatus::ScreenNotFound;
     }
 
-    out_screen = opencv_extensions::warp_to_size(wide_frame, corners, cv::Size(kFrameWidth, kFrameHeight));
+    out_screen = opencv_extensions::warp_to_size(input_frame, corners, cv::Size(kFrameWidth, kFrameHeight));
 
     return CaptureStatus::ScreenFound;
 }
 
-bool ScreenLocator::find_screen_corners(const cv::Mat& wide_frame, std::vector<cv::Point2f>& out_corners)
+bool find_screen_corners(const cv::Mat& input_frame, std::vector<cv::Point2f>& out_corners)
 {
     const auto contours = opencv_extensions::find_edge_contours(
-                                                wide_frame, 
-                                                kBlurKernelSize, 
-                                                kCannyLowThreshold, 
-                                                kCannyHighThreshold, 
+                                                input_frame,
+                                                kBlurKernelSize,
+                                                kCannyLowThreshold,
+                                                kCannyHighThreshold,
                                                 kMorphologyKernelSize);
 
-    const double minimum_area = kMinScreenAreaRatio * static_cast<double>(wide_frame.total());
+    const double minimum_area = kMinScreenAreaRatio * static_cast<double>(input_frame.total());
     double best_area = 0.0;
     bool has_match = false;
 
@@ -80,5 +72,6 @@ bool ScreenLocator::find_screen_corners(const cv::Mat& wide_frame, std::vector<c
     return has_match;
 }
 
+} // namespace screen_locator
 } // namespace capture
 } // namespace autoshinyhunthgss

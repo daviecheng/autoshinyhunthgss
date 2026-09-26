@@ -51,13 +51,12 @@ void write_artifact(const std::string& name, const cv::Mat& image)
 
 TEST(ScreenLocatorTest, LocatesScreenInPhoto)
 {
-    const cv::Mat input_frame = load_artifact("screen_input.png");
+    const cv::Mat input_frame = load_artifact("input_frame.png");
     ASSERT_FALSE(input_frame.empty());
 
-    ScreenLocator screenLocator;
     cv::Mat output_screen;
 
-    const CaptureStatus status = screenLocator.locate(input_frame, output_screen);
+    const CaptureStatus status = screen_locator::locate(input_frame, output_screen);
     write_artifact("input_frame", input_frame);
     write_artifact("output_frame", output_screen);
 

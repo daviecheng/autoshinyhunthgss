@@ -9,18 +9,15 @@
 
 namespace autoshinyhunthgss {
 namespace capture {
+namespace screen_locator {
 
-class ScreenLocator
-{
-public:
-    CaptureStatus locate(const cv::Mat& wide_frame, cv::Mat& out_screen);
+// Finds the DS top screen in a camera frame and rectifies it to kFrameWidth x kFrameHeight
+CaptureStatus locate(const cv::Mat& input_frame, cv::Mat& out_screen);
 
-private:
-    std::vector<cv::Point2f> _last_good_corners;
+// Finds the screen's four corners, ordered to-left, top-right, bottom-right, bottom-left
+bool find_screen_corners(const cv::Mat& input_frame, std::vector<cv::Point2f>& out_corners);
 
-    bool find_screen_corners(const cv::Mat& wide_frame, std::vector<cv::Point2f>& out_corners);
-};
-    
+} // namespace screen_locator
 } // namespace capture
 } // namespace autoshinyhunthgss
 
