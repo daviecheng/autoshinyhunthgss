@@ -20,7 +20,7 @@ constexpr const char* kTestName = "screen_locator";
 
 TEST(ScreenLocatorTest, LocatesScreenInPhoto)
 {
-    const cv::Mat input_frame = load_artifact(kTestName, "input_frame.png");
+    const cv::Mat input_frame = load_artifact("overworld_idle", "01_leveled.png");
     ASSERT_FALSE(input_frame.empty());
 
     cv::Mat output_screen;
