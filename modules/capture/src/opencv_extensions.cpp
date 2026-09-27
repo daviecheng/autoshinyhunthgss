@@ -32,31 +32,37 @@ std::vector<cv::Point2f> order_corners(const std::vector<cv::Point>& quad)
     return ordered;
 }
 
+double aspect_ratio(const std::vector<cv::Point2f>& ordered_corners)
+{
+    if (ordered_corners.size() != 4)
+    {
+        return 0.0;
+    }
+
+    const double width = (cv::norm(ordered_corners[1] - ordered_corners[0])
+                        + cv::norm(ordered_corners[2] - ordered_corners[3])) / 2.0;
+
+    const double height = (cv::norm(ordered_corners[3] - ordered_corners[0])
+                         + cv::norm(ordered_corners[2] - ordered_corners[1])) / 2.0;
+
+    return (height > 0.0) ? (width / height) : 0.0;
+}
+
 bool has_plausible_aspect_ratio(const std::vector<cv::Point2f>& ordered_corners,
                                 double expected_aspect_ratio,
                                 double tolerance)
 {
-    if (ordered_corners.size() != 4)
+    // aspect_ratio returns 0 for a quad that is not four points or has no
+    // height, and no tolerance should accept that.
+    const double ratio = aspect_ratio(ordered_corners);
+
+    if (ratio <= 0.0)
     {
         return false;
     }
 
-    const double top    = cv::norm(ordered_corners[1] - ordered_corners[0]);
-    const double bottom = cv::norm(ordered_corners[2] - ordered_corners[3]);
-    const double left   = cv::norm(ordered_corners[3] - ordered_corners[0]);
-    const double right  = cv::norm(ordered_corners[2] - ordered_corners[1]);
-
-    const double width = (top + bottom) / 2.0;
-    const double height = (left + right) / 2.0;
-
-    if (height <= 0.0)
-    {
-        return false;
-    }
-
-    return std::abs(width / height - expected_aspect_ratio) <= tolerance;
+    return std::abs(ratio - expected_aspect_ratio) <= tolerance;
 }
-    
 
 std::vector<std::vector<cv::Point>> find_bright_contours(const cv::Mat& bgr_image)
 {

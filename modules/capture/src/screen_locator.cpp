@@ -1,7 +1,7 @@
 #include "screen_locator.hpp"
 
-#include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include <opencv2/imgproc.hpp>
 #include <capture/capture_constants.hpp>
@@ -33,43 +33,110 @@ CaptureStatus locate(const cv::Mat& input_frame, cv::Mat& out_screen)
 
 bool find_screen_corners(const cv::Mat& input_frame, std::vector<cv::Point2f>& out_corners)
 {
-    const auto contours = opencv_extensions::find_edge_contours(
-                                                input_frame,
-                                                kBlurKernelSize,
-                                                kCannyLowThreshold,
-                                                kCannyHighThreshold,
-                                                kMorphologyKernelSize);
+    cv::Mat grayscale;
+    cv::cvtColor(input_frame, grayscale, cv::COLOR_BGR2GRAY);
 
-    const double minimum_area = kMinScreenAreaRatio * static_cast<double>(input_frame.total());
-    double best_area = 0.0;
-    bool has_match = false;
+    cv::Mat hsv;
+    cv::cvtColor(input_frame, hsv, cv::COLOR_BGR2HSV);
+
+    std::vector<cv::Mat> hsv_channels;
+    cv::split(hsv, hsv_channels);
+
+    double best_score = std::numeric_limits<double>::max();
+    std::vector<cv::Point2f> best_corners;
+    cv::Mat mask;
+
+    for (const int threshold : kDarkThresholds)
+    {
+        cv::threshold(grayscale, mask, threshold, 255, cv::THRESH_BINARY_INV);
+        clean_mask(mask);
+        collect_screen_candidates(mask, input_frame, best_corners, best_score);
+    }
+
+    for (const int threshold : kBrightThresholds)
+    {
+        cv::threshold(grayscale, mask, threshold, 255, cv::THRESH_BINARY);
+        clean_mask(mask);
+        collect_screen_candidates(mask, input_frame, best_corners, best_score);
+    }
+
+    for (const int threshold : kSaturationThresholds)
+    {
+        cv::threshold(hsv_channels[1], mask, threshold, 255, cv::THRESH_BINARY);
+        clean_mask(mask);
+        collect_screen_candidates(mask, input_frame, best_corners, best_score);
+    }
+
+    if (best_corners.empty())
+    {
+        return false;
+    }
+
+    out_corners = best_corners;
+
+    return true;
+}
+
+void clean_mask(cv::Mat& mask)
+{
+    const cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(kMaskKernelSize, kMaskKernelSize));
+
+    cv::morphologyEx(mask, mask, cv::MORPH_OPEN, kernel);
+    cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, kernel);
+}
+
+void collect_screen_candidates(const cv::Mat& mask,
+                               const cv::Mat& input_frame,
+                               std::vector<cv::Point2f>& out_corners,
+                               double& out_best_score)
+{
+    std::vector<std::vector<cv::Point>> contours;
+    cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
 
     for (const auto& contour : contours)
     {
-        const double area = cv::contourArea(contour);
-        if (area < minimum_area || area <= best_area)
+        const double area_ratio = cv::contourArea(contour) / static_cast<double>(input_frame.total());
+        if (area_ratio < kMinScreenAreaRatio || area_ratio > kMaxScreenAreaRatio)
         {
             continue;
         }
 
-        const auto polygon = opencv_extensions::approximate_polygon(contour, kPolygonEpsilonRatio);
-        if (polygon.size() != 4 || !cv::isContourConvex(polygon))
-        {
-            continue;
-        }
+        // The hull discards the ragged interior detail a raw contour carries, so
+        // the screen border can simplify to four corners.
+        std::vector<cv::Point> hull;
+        cv::convexHull(contour, hull);
 
-        const auto ordered = opencv_extensions::order_corners(polygon);
-        if (!opencv_extensions::has_plausible_aspect_ratio(ordered, kExpectedAspectRatio, kAspectRatioTolerance))
+        for (double epsilon = kPolygonEpsilonMin; epsilon <= kPolygonEpsilonMax; epsilon += kPolygonEpsilonStep)
         {
-            continue;
-        }
+            const auto polygon = opencv_extensions::approximate_polygon(hull, epsilon);
+            if (polygon.size() != 4)
+            {
+                continue;
+            }
 
-        out_corners = ordered;
-        best_area = area;
-        has_match = true;
+            if (!cv::isContourConvex(polygon))
+            {
+                break;
+            }
+
+            const auto ordered = opencv_extensions::order_corners(polygon);
+            if (!opencv_extensions::has_plausible_aspect_ratio(ordered, kExpectedAspectRatio, kAspectRatioTolerance))
+            {
+                break;
+            }
+
+            // Largest-first is wrong here: a lit window outvotes the screen.
+            // The screen is whichever region is shaped most like a DS screen.
+            const double score = std::abs(opencv_extensions::aspect_ratio(ordered) - kExpectedAspectRatio);
+            if (score < out_best_score)
+            {
+                out_corners = ordered;
+                out_best_score = score;
+            }
+
+            break;
+        }
     }
-
-    return has_match;
 }
 
 } // namespace screen_locator

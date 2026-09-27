@@ -12,6 +12,9 @@ namespace opencv_extensions {
 // Reorders an arbitrary quadrilateral top-left, top-right, bottom-right, bottom-left
 std::vector<cv::Point2f> order_corners(const std::vector<cv::Point>& quad);
 
+// Mean width over mean height of an ordered quadrilateral
+double aspect_ratio(const std::vector<cv::Point2f>& ordered_corners);
+
 // Mean width over mean height, compared against an expected ratio
 bool has_plausible_aspect_ratio(const std::vector<cv::Point2f>& ordered_corners,
                                 double expected_aspect_ratio,
