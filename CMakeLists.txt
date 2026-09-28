@@ -26,5 +26,6 @@ if(BUILD_TESTING)
     find_package(GTest REQUIRED)
 endif()
 
+add_subdirectory(modules/app)
 add_subdirectory(modules/capture)
 add_subdirectory(modules/vision)
