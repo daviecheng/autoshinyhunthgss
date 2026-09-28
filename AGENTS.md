@@ -37,8 +37,8 @@ one is genuinely blocking, say so rather than routing past it.
 ## Module Layout
 
 Each library module under `modules/` uses the same structure:
-`include/<module_name>/`, `private_include/`, `src/`, `test/`. App is the exception — only
-`src/`, with one executable entry point per hunt scenario.
+`include/<module_name>/`, `private_include/`, `src/`, `tests/`. App is the exception — only
+`src/`, with one `run_*` entry per hunt method and a single `main.cpp` that selects one.
 
 All code uses the `autoshinyhunthgss` namespace.
 
@@ -54,8 +54,10 @@ All code uses the `autoshinyhunthgss` namespace.
 ## Testing
 
 Each module has its own unit tests — a fake `IFrameSource` and test images for vision, a mock
-`IButtonDriver` for gpio, direct input/output for strategy. capture's framing takes wide BGR888 rig
-photos in and produces cropped screens out; fixtures cover the nominal rig plus shifted and tilted
-variants to exercise that tolerance. Fixture dimensions are unconstrained — only the 512x384 BGR888
-output is asserted. capture's libcamera backend is gated behind a CMake option so everything
-else builds and tests without a Pi. GoogleTest for the framework, CTest for the runner.
+`IButtonDriver` for gpio, direct input/output for strategy. capture's framing takes rig photos in and
+produces cropped screens out; fixtures live in `test_data/<scenario>/`, covering each game state plus
+tilted, glare and bad-rig variants. Fixture dimensions are unconstrained — only the 512x384 BGR888
+output is asserted. Mock screens are generated at runtime by the test helpers rather than committed,
+and anything a test writes goes to `test_output/<test>/`. capture's libcamera backend is gated behind
+a CMake option so everything else builds and tests without a Pi. GoogleTest for the framework, CTest
+for the runner.

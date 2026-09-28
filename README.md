@@ -41,7 +41,7 @@ The architecture is modular, designed to support additional hunt methods (random
 
 The Pi 4 software is split into independent C++ modules:
 
-- **capture** — "Give me a frame." Owns camera access through the libcamera C++ API. Locates the DS top screen in every frame, rectifies it to a fixed 512x384 BGR888 buffer, and hands that out as raw bytes plus width, height, stride and pixel format. The mount holds the nominal framing; locating the screen per frame is tolerance for the rig drifting or being knocked, so captures stay stable without a recalibration step. Every frame is located on its own pixels -- a frame whose screen cannot be found is reported as such rather than reusing an earlier framing, so a knocked rig surfaces as a failure instead of a silently wrong crop. Requests BGR888 from the camera as well, so framing is geometry only — no format conversion anywhere in capture. Uses OpenCV internally for this, but `cv::Mat` never crosses its public interface. Exposes an `IFrameSource` interface so vision can be driven from stored images with no camera attached.
+- **capture** — "Give me a frame." Owns camera access through the libcamera C++ API. Locates the DS top screen in every frame, rectifies it to a fixed 512x384 BGR888 buffer, and hands that out as raw bytes plus width, height, stride and pixel format. The mount holds the nominal framing; locating the screen per frame is tolerance for the rig drifting or being knocked, so captures stay stable without a recalibration step. Every frame is located on its own pixels -- a frame whose screen cannot be found is reported as such rather than reusing an earlier framing, so a knocked rig surfaces as a failure instead of a silently wrong crop. Requests BGR888 from the camera as well, so framing is geometry only — no format conversion anywhere in capture. Finds the screen as a filled region rather than by its outline — thresholded across brightness and saturation, since the screen is dark when the DS is off and vivid when it is on, and the candidate closest to 4:3 wins. Assumes the mount keeps the DS top screen filling most of the frame, which is the condition the rig guarantees. Outside it — a closed lid, or the screen half out of frame — the locator can return a confident false positive, since a large flat surface passes the same size and aspect tests. `ScreenFound` therefore means a screen-shaped region was located, not that it is the DS screen. Uses OpenCV internally for this, but `cv::Mat` never crosses its public interface. Exposes an `IFrameSource` interface so vision can be driven from stored images with no camera attached.
 - **vision** — "What do I see?" Takes an already-cropped top-screen frame from capture and classifies it with OpenCV into a single `ScreenState`. Classification only — framing and cropping belong to capture. Validates that the frame is 512x384 BGR888 before classifying; a mismatch means capture is broken, so it returns `Unknown` and logs rather than converting the frame or its reference images. Screen classification and shiny classification are separate stages: the screen classifier runs on every frame (title, dialogue, encounter, sprite visible), and only a stable encounter advances to the shiny classifier, which compares the sprite against stored reference images of the target species. Every other screen state short-circuits and skips the shiny check entirely. Requiring the encounter to be stable keeps the comparison off half-faded sprites. Not the sparkle animation — the sprite persists, so it can be sampled repeatedly. OpenCV stays inside this module; other modules only see a `ScreenState` enum, with the internal `ShinyVerdict` kept in `private_include/`.
 - **strategy** — "What should I do?" Takes a `ScreenState`, returns a `ButtonAction` — a *set* of buttons, so simultaneous presses are one action (soft reset = `{L, R, Start, Select}`) and the empty set means no buttons are pressed. Carries no timing. Each hunt method is a concrete `IHuntStrategy` implementation (e.g., `SoftResetStrategy`), fixed at construction rather than passed in at runtime. Adding a new method means adding a new class — no changes elsewhere. Soft reset only on a confirmed non-shiny state; an unknown or uncertain state halts rather than resets.
 - **gpio** — "Press the button." Drives MOSFET gates via Pi 4 GPIO to emulate DS button presses. Takes a `ButtonAction` and drives its buttons together, owning press duration so strategy stays timing-free. Exposes an `IButtonDriver` interface so tests can mock it without hardware.
@@ -127,22 +127,24 @@ Core modules do not depend on app. To extend: add new `IHuntStrategy` impls for 
 CMakeLists.txt                  — top-level CMake, aggregates modules
 modules/                        — C++ modules (static libraries)
   capture/                      — camera access (IFrameSource + libcamera backend)
-    include/capture/            — public headers (IFrameSource, Frame)
+    include/capture/            — public headers (IFrameSource, Frame, frame source factory)
     private_include/            — libcamera backend and screen locator internals
     src/                        — implementation + CMakeLists.txt
-    test/                       — unit tests for this module
+    tests/                      — unit tests, fixtures in test_data/
   vision/                       — screen and shiny classification
     include/vision/             — public headers (ScreenState enum)
     private_include/            — internal headers (screen + shiny classifiers)
     src/                        — implementation + CMakeLists.txt
-    test/                       — unit tests for this module
+    tests/                      — unit tests for this module
   strategy/                     — hunt logic (IHuntStrategy + implementations)
   gpio/                         — GPIO button driver (IButtonDriver + implementation)
-  app/                          — main application entry points and orchestration
+  app/                          — the executable
+    src/                        — one run_* entry per hunt method, selected in main.cpp
+captures/                       — frames retained at runtime (git ignored)
 docs/                           — Schematics, 3D models, and documentation
 ```
 
-Library modules (capture, vision, strategy, gpio) build as static libraries. App builds as an executable that links against them.
+Library modules (capture, vision, strategy, gpio) build as static libraries, each exposing a public `include/` others compile against. App has no `include/` — nothing links against an executable, so it keeps its headers beside its sources.
 
 ## Dependencies
 
@@ -168,6 +170,22 @@ C++17, CMake minimum 3.10:
 cmake -B ./build
 cmake --build ./build
 ```
+
+## Running
+
+Run from the project root, so retained frames land in `captures/`:
+
+```bash
+./build/modules/app/soft_reset_hunt --source image --images modules/capture/tests/test_data
+```
+
+`--source image` replays stored photos through the same pipeline, for running without a camera.
+`--source camera` is the real hunt, available once the libcamera backend exists.
+
+Only failed frames are retained by default. `--retain-all` keeps every frame's input and output,
+which is slower but shows the framing. `--help` lists every option.
+
+On the Pi, pass `--output-dir ~/captures` so a redeploy does not overwrite it.
 
 ## Testing
 
