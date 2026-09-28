@@ -6,6 +6,7 @@ target_sources(capture
         src/image_frame_source.cpp
         src/frame_conversion.cpp
         src/frame_recorder.cpp
+        src/frame_source_factory.cpp
         src/opencv_extensions.cpp
         src/screen_locator.cpp
 )
