@@ -23,6 +23,12 @@ target_link_libraries(capture
         PkgConfig::OpenCV
 )
 
+if(LIBCAMERA_FOUND)
+    target_sources(capture PRIVATE src/libcamera_frame_source.cpp)
+    target_link_libraries(capture PRIVATE PkgConfig::LIBCAMERA)
+    target_compile_definitions(capture PRIVATE CAPTURE_HAS_LIBCAMERA)
+endif()
+
 target_compile_features(capture
     PUBLIC
         cxx_std_17

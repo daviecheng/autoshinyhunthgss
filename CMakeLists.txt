@@ -15,6 +15,20 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(OpenCV REQUIRED IMPORTED_TARGET opencv4)
 message (STATUS "OpenCV_VERSION = ${OpenCV_VERSION}")
 
+# Builds the camera source when libcamera is installed, and skips it otherwise.
+# -DBUILD_WITH_LIBCAMERA=OFF skips it even when installed
+option(BUILD_WITH_LIBCAMERA "Build the libcamera frame source when libcamera is installed" ON)
+
+if(BUILD_WITH_LIBCAMERA)
+    pkg_check_modules(LIBCAMERA IMPORTED_TARGET libcamera)
+
+    if(NOT LIBCAMERA_FOUND)
+        message(WARNING "libcamera not found; building without the camera frame source")
+    endif()
+endif()
+message(STATUS "BUILD_WITH_LIBCAMERA = ${BUILD_WITH_LIBCAMERA} (found: ${LIBCAMERA_FOUND})")
+
+# Build unit test options
 option(BUILD_CAPTURE_TESTS "Build capture tests" ON)
 option(BUILD_VISION_TESTS "Build vision tests" ON)
 
@@ -26,6 +40,7 @@ if(BUILD_TESTING)
     find_package(GTest REQUIRED)
 endif()
 
+# Project modules
 add_subdirectory(modules/app)
 add_subdirectory(modules/capture)
 add_subdirectory(modules/vision)

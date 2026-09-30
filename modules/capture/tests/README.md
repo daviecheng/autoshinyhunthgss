@@ -31,12 +31,17 @@ test_output/
 
 ## Test data
 
-Fixtures live in `test_data/`, one subfolder per test:
+Fixtures live in `test_data/`, one subfolder per screen state, plus `bad_rig/` for shots the
+rig should never produce:
 
 ```
 test_data/
-└── screen_locator/
-    └── input_frame.png
+├── bad_rig/
+├── encounter_non_shiny/
+├── intro/
+├── intro_b_roll/
+├── off/
+└── overworld_idle/
 ```
 
 `CAPTURE_TEST_DATA_DIR` and `CAPTURE_TEST_OUTPUT_DIR` are defined in

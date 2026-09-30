@@ -171,6 +171,14 @@ cmake -B ./build
 cmake --build ./build
 ```
 
+The libcamera camera source is built automatically when libcamera is installed, and skipped
+otherwise, so the development machine builds without it. Pass `-DBUILD_WITH_LIBCAMERA=OFF` to
+skip it even when installed:
+
+```bash
+cmake -B ./build -DBUILD_WITH_LIBCAMERA=OFF
+```
+
 ## Running
 
 Run from the project root, so retained frames land in `captures/`:
@@ -180,7 +188,12 @@ Run from the project root, so retained frames land in `captures/`:
 ```
 
 `--source image` replays stored photos through the same pipeline, for running without a camera.
-`--source camera` is the real hunt, available once the libcamera backend exists.
+`--source camera` is the real hunt and the default source. It needs a build with libcamera,
+which is the case on the Pi:
+
+```bash
+./build/modules/app/soft_reset_hunt --source camera --interval-ms 500
+```
 
 Only failed frames are retained by default. `--retain-all` keeps every frame's input and output,
 which is slower but shows the framing. `--help` lists every option.

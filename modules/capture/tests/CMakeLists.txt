@@ -19,6 +19,10 @@ target_compile_definitions(capture_tests
         CAPTURE_TEST_OUTPUT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test_output"
 )
 
+if (LIBCAMERA_FOUND)
+    target_compile_definitions(capture_tests PRIVATE CAPTURE_HAS_LIBCAMERA)
+endif()
+
 target_link_libraries(capture_tests
     PRIVATE
         capture

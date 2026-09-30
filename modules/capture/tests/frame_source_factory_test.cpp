@@ -25,10 +25,14 @@ TEST(FrameSourceFactoryTest, NoImageFrameSourceWithoutImages)
     EXPECT_EQ(make_image_frame_source(ImageSourceConfig{}), nullptr);
 }
 
-TEST(FrameSourceFactoryTest, CreateCamerFrameSource)
+TEST(FrameSourceFactoryTest, CreateCameraFrameSource)
 {
-    // Unimplemented
+#ifdef CAPTURE_HAS_LIBCAMERA
+    // Runs agains the real camera: failes if none connected or another process holds it.
+    EXPECT_NE(make_camera_frame_source(CameraSourceConfig{}), nullptr);
+#else
     EXPECT_EQ(make_camera_frame_source(CameraSourceConfig{}), nullptr);
+#endif
 }
 
 } // namespace tests
