@@ -18,19 +18,19 @@ namespace {
 constexpr const char* kTestName = "screen_locator";
 } // namespace
 
-// TEST(ScreenLocatorTest, LocatesScreenInPhoto)
-// {
-//     const cv::Mat input_frame = load_artifact("night/both_health_bars", "001.png");
-//     ASSERT_FALSE(input_frame.empty());
+TEST(ScreenLocatorTest, LocatesScreenInPhoto)
+{
+    const cv::Mat input_frame = load_artifact("night/both_health_bars", "001.png");
+    ASSERT_FALSE(input_frame.empty());
 
-//     cv::Mat output_screen;
+    cv::Mat output_screen;
 
-//     const CaptureStatus status = screen_locator::locate(input_frame, output_screen);
-//     write_artifact(kTestName, "input_frame", input_frame);
-//     write_artifact(kTestName, "output_frame", output_screen);
+    const CaptureStatus status = screen_locator::locate(input_frame, output_screen);
+    write_artifact(kTestName, "input_frame", input_frame);
+    write_artifact(kTestName, "output_frame", output_screen);
 
-//     ASSERT_EQ(status, CaptureStatus::ScreenFound);
-// }
+    ASSERT_EQ(status, CaptureStatus::ScreenFound);
+}
 
 } // namespace tests
 } // namespace autoshinyhunthgss::capture

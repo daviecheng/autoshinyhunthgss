@@ -41,12 +41,12 @@ inline std::size_t count_entries(const std::filesystem::path& directory)
 
 inline std::string test_data_path(const std::string& test_name, const std::string& file_name)
 {
-    return (std::filesystem::path(CAPTURE_TEST_DATA_DIR) / test_name / file_name).string();
+    return (std::filesystem::path(TEST_DATA_DIR) / test_name / file_name).string();
 }
 
 inline cv::Mat load_artifact(const std::string& test_name, const std::string& name)
 {
-    const std::filesystem::path path = std::filesystem::path(CAPTURE_TEST_DATA_DIR) / test_name / name;
+    const std::filesystem::path path = std::filesystem::path(TEST_DATA_DIR) / test_name / name;
 
     if (!std::filesystem::exists(path))
     {

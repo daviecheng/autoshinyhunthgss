@@ -31,18 +31,24 @@ test_output/
 
 ## Test data
 
-Fixtures live in `test_data/`, one subfolder per screen state, plus `bad_rig/` for shots the
-rig should never produce:
+Fixtures live in `test_data/` at the project root, shared by every module's tests. They are raw
+rig photos (1280x960), grouped by time of day and screen state:
 
 ```
 test_data/
-├── bad_rig/
-├── encounter_non_shiny/
-├── intro/
-├── intro_b_roll/
-├── off/
-└── overworld_idle/
+├── day/
+│   ├── both_health_bars/
+│   └── one_health_bar/
+├── morning/
+│   ├── both_health_bars/
+│   └── one_health_bar/
+├── night/
+│   ├── both_health_bars/
+│   └── one_health_bar/
+├── non_encounter/
+├── screen_found/
+└── screen_not_found/
 ```
 
-`CAPTURE_TEST_DATA_DIR` and `CAPTURE_TEST_OUTPUT_DIR` are defined in
+`TEST_DATA_DIR` and `CAPTURE_TEST_OUTPUT_DIR` are defined in
 [`CMakeLists.txt`](CMakeLists.txt) so tests find these folders.
