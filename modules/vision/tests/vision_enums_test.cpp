@@ -1,5 +1,3 @@
-// tests/screen_state_test.cpp
-
 #include <gtest/gtest.h>
 
 #include <vision/vision_enums.hpp>
@@ -14,5 +12,5 @@ TEST(ScreenStateTest, InvalidScreenConvertToString)
 
 TEST(ScreenStateTest, EncounterShinyConvertToString)
 {
-    EXPECT_EQ(to_string(ScreenState::EncounterShiny), "EncounterShiny");
+    EXPECT_EQ(to_string(ScreenState::EncounterShiny), "Encounter Shiny");
 }

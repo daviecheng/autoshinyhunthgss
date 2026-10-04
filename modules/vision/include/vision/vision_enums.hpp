@@ -9,10 +9,9 @@ namespace vision {
 
 enum class ScreenState : std::uint8_t {
     Unknown,
-    GameIntro,
-    UserProfileSelect,
-    OverworldIdle,
+    NotEncounter,
     Encounter,
+    EncounterUncertain,
     EncounterNotShiny,
     EncounterShiny,
     Count
@@ -21,18 +20,16 @@ enum class ScreenState : std::uint8_t {
 inline std::string_view to_string(ScreenState state)
 {
     switch (state) {
-        case ScreenState::GameIntro:
-            return "GameIntro";
-        case ScreenState::UserProfileSelect:
-            return "UserProfileSelect";
-        case ScreenState::OverworldIdle:
-            return "OverworldIdle";
+        case ScreenState::NotEncounter:
+            return "Not Encounter";
         case ScreenState::Encounter:
             return "Encounter";
+        case ScreenState::EncounterUncertain:
+            return "Encounter Uncertain";
         case ScreenState::EncounterNotShiny:
-            return "EncounterNotShiny";
+            return "Encounter Not Shiny";
         case ScreenState::EncounterShiny:
-            return "EncounterShiny";
+            return "Encounter Shiny";
         case ScreenState::Unknown:
         default:
             return "Unknown";
