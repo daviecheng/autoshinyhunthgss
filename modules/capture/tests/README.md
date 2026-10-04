@@ -39,15 +39,15 @@ test_data/
 ├── day/
 │   ├── both_health_bars/
 │   └── one_health_bar/
-├── morning/
-│   ├── both_health_bars/
-│   └── one_health_bar/
 ├── night/
 │   ├── both_health_bars/
 │   └── one_health_bar/
 ├── non_encounter/
 ├── screen_found/
-└── screen_not_found/
+├── screen_not_found/
+└── sunset/
+    ├── both_health_bars/
+    └── one_health_bar/
 ```
 
 `TEST_DATA_DIR` and `CAPTURE_TEST_OUTPUT_DIR` are defined in

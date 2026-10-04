@@ -208,13 +208,13 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Values(
         DatasetCase{"day/both_health_bars", CaptureStatus::ScreenFound},
         DatasetCase{"day/one_health_bar", CaptureStatus::ScreenFound},
-        DatasetCase{"morning/both_health_bars", CaptureStatus::ScreenFound},
-        DatasetCase{"morning/one_health_bar", CaptureStatus::ScreenFound},
         DatasetCase{"night/both_health_bars", CaptureStatus::ScreenFound},
         DatasetCase{"night/one_health_bar", CaptureStatus::ScreenFound},
         DatasetCase{"non_encounter", CaptureStatus::ScreenFound},
         DatasetCase{"screen_found", CaptureStatus::ScreenFound},
-        DatasetCase{"screen_not_found", CaptureStatus::ScreenNotFound}),
+        DatasetCase{"screen_not_found", CaptureStatus::ScreenNotFound},
+        DatasetCase{"sunset/both_health_bars", CaptureStatus::ScreenFound},
+        DatasetCase{"sunset/one_health_bar", CaptureStatus::ScreenFound}),
     [](const ::testing::TestParamInfo<DatasetCase>& info) { return to_case_name(info.param.dataset); });
 
 } // namespace tests
