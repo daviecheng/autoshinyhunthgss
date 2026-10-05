@@ -9,6 +9,8 @@ namespace autoshinyhunthgss {
 namespace vision {
 
 // Inclusive hue range plus saturation/value floors, in OpenCV HSV units (H 0-179, S/V 0-255)
+// Higher saturation = more vivid; lower saturation = colorless (grey or white)
+// Higher value = bright; lower value = black.
 struct HsvBand
 {
     int h_lo = 0;
