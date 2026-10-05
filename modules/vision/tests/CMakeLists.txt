@@ -1,4 +1,5 @@
 add_executable(vision_tests
+    frame_view_test.cpp
     vision_config_test.cpp
     vision_enums_test.cpp
 )

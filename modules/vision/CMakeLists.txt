@@ -3,6 +3,7 @@ add_library(vision STATIC)
 target_sources(vision
     PRIVATE
         # Add src files here
+        src/frame_view.cpp
         src/screen_classifier.cpp
         src/vision_config.cpp
 )
