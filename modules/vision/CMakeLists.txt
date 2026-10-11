@@ -5,6 +5,7 @@ target_sources(vision
         # Add src files here
         src/band_mask.cpp
         src/frame_view.cpp
+        src/health_bar_detector.cpp
         src/screen_classifier.cpp
         src/vision_config.cpp
 )
