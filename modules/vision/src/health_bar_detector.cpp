@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cstdint>
 
+#include "band_mask.hpp"
+
 namespace autoshinyhunthgss {
 namespace vision {
 
@@ -35,6 +37,18 @@ int longest_run(const cv::Mat& mask, int gap_tolerance)
     }
 
     return longest;
+}
+
+HealthBars detect_health_bars(const cv::Mat& hsv, const SingleBattleUiConfig& ui)
+{
+    HealthBars bars;
+
+    bars.enemy_run = longest_run(band_mask(hsv(ui.enemy_bar_window), ui.hp_green), ui.bar_gap_tolerance);
+    bars.player_run = longest_run(band_mask(hsv(ui.player_bar_window), ui.hp_green), ui.bar_gap_tolerance);
+    bars.has_enemy_bar = bars.enemy_run >= ui.min_bar_run;
+    bars.has_player_bar = bars.player_run >= ui.min_bar_run;
+
+    return bars;
 }
 
 } // namespace vision

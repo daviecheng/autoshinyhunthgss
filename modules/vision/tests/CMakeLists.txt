@@ -12,6 +12,11 @@ target_include_directories(vision_tests
         ${VISION_ROOT_DIR}/private_include
 )
 
+target_compile_definitions(vision_tests
+    PRIVATE
+        TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/test_data"
+)
+
 target_link_libraries(vision_tests
     PRIVATE
         vision
