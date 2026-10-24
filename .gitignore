@@ -6,6 +6,7 @@ build/
 
 # Test Artifacts
 modules/capture/tests/test_output/
+modules/vision/tests/test_output/
 
 # Captured frames
 captures/

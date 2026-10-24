@@ -7,9 +7,11 @@
 #include <gtest/gtest.h>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 #include <capture/frame_source_factory.hpp>
 
+#include "band_mask.hpp"
 #include "frame_view.hpp"
 #include "health_bar_detector.hpp"
 
@@ -177,6 +179,25 @@ TEST(HealthBarDetectorTest, NonEncounterShowsNoBars)
         EXPECT_FALSE(bars->has_enemy_bar) << path << " enemy run " << bars->enemy_run;
         EXPECT_FALSE(bars->has_player_bar) << path << " player run " << bars->player_run;
     }
+}
+
+TEST(HealthBarDetectorTest, DISABLED_OutputStencil)
+{
+    capture::ImageSourceConfig config;
+    config.image_paths = {std::string(TEST_DATA_DIR) + "/night/both_health_bars/004.png"};
+    const auto source = capture::make_image_frame_source(config);
+
+    capture::Frame frame;
+    ASSERT_EQ(source->capture_frame(frame), capture::CaptureStatus::ScreenFound);
+
+    const cv::Mat cropped = *to_bgr_view(frame);
+    cv::Mat hsv;
+    cv::cvtColor(cropped, hsv, cv::COLOR_BGR2HSV);
+
+    const std::filesystem::path output(VISION_TEST_OUTPUT_DIR);
+    std::filesystem::create_directories(output);
+
+    cv::imwrite((output / "stencil.png").string(), band_mask(hsv, SingleBattleUiConfig{}.hp_green));
 }
 
 } // namespace tests

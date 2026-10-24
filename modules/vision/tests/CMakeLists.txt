@@ -15,6 +15,7 @@ target_include_directories(vision_tests
 target_compile_definitions(vision_tests
     PRIVATE
         TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/test_data"
+        VISION_TEST_OUTPUT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test_output"
 )
 
 target_link_libraries(vision_tests
